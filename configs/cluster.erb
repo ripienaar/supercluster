@@ -1,0 +1,55 @@
+port: 4222
+monitor_port: 8222
+server_name: $NAME
+
+cluster {
+  port: 6222
+
+  routes = [
+    <%- (1..@cluster_members).each do |node| -%>
+    nats-route://nc<%= node %>:6222
+    <%- end -%>
+  ]
+}
+
+gateway {
+  name: $GATEWAY
+  port: 7222
+
+  gateways: [
+    <%- (1..@clusters).each do |cluster| -%>
+    {
+      name: "c<%= cluster %>"
+      urls: [
+        <%- (1..@cluster_members).each do |node| -%>
+        "nats://nc<%= node %>.c<%= cluster %>.<%= @domain %>:7222"
+        <%- end -%>
+      ]
+    }
+    <%- end -%>
+  ]
+}
+
+<%- if @password -%>
+accounts {
+  one: {
+    users = [
+      {user: one, password: <%= @password %>}
+    ]
+  }
+
+  two: {
+    users = [
+      {user: two, password: <%= @password %>}
+    ]
+  }
+
+  system: {
+    users = [
+      {user: system, password: <%= @password %>}
+    ]
+  }
+}
+
+system_account: system
+<%- end -%>
