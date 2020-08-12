@@ -1,6 +1,7 @@
 require "pp"
 require "yaml"
 require "erb"
+require "json"
 
 # DOMAIN - the domain to create containers in (example.net)
 # IMAGE - the docker image to use (nats)
@@ -10,12 +11,14 @@ require "erb"
 # IMAGE_CONFIG - the path in the image to use for the configuration (/nats-server.conf)
 # PASSWORD - set this to enable multiple accounts using this password
 # NATS - opens a shell after creating the configurations for a specific cluster and host. Set to '1 1' for cluster 1 node 1
+# TOXICLUSTER - if set to 1 configures toxiproxy between clusters
 
 def parse_env!
   @domain = ENV.fetch("DOMAIN", "example.net")
   @image = ENV.fetch("IMAGE", "nats")
   @image_config = ENV.fetch("IMAGE_CONFIG", "/nats-server.conf")
   @password = ENV["PASSWORD"]
+  @toxicluster = ENV["TOXICLUSTER"] == "1"
 
   begin
     @clusters = Integer(ENV.fetch("CLUSTERS", 2))
@@ -62,6 +65,7 @@ def compose
     "services" => services,
     "networks" => networks
   }
+  toxiproxy = []
 
   (1..@clusters).each do |cluster|
     network = "nats-cluster%d" % cluster
@@ -79,7 +83,7 @@ def compose
       puts "    Port: %d" % port
       puts
 
-      services[name]= {
+      services[name] = {
         "container_name" => container_name,
         "image" => @image,
         "dns_search" => cluster_domain,
@@ -95,7 +99,22 @@ def compose
           "./configs/cluster.conf:%s" % @image_config
         ],
         "ports" => [
-          - "%d:4222" % port
+          "%d:4222" % port
+        ]
+      }
+    end
+
+    if @toxicluster
+      services["toxiproxy.%s" % @domain] = {
+        "container_name" => "toxiproxy",
+        "image" => "shopify/toxiproxy",
+        "dns_search" => @domain,
+        "command" => "-host=0.0.0.0 --config=/toxiproxy.json",
+        "networks" => [
+          "shared"
+        ],
+        "volumes" => [
+          "./configs/toxiproxy.json:/toxiproxy.json",
         ]
       }
     end
@@ -121,6 +140,23 @@ def start_shell
   sh ENV.fetch("SHELL", "bash")
 end
 
+def toxiconfig
+  toxi = []
+
+  (1..@clusters).each do |cluster|
+    (1..@cluster_members).each do |node|
+      toxi << {
+        "name" => "nc%d_c%d" % [node, cluster],
+        "listen" => "0.0.0.0:%d" % [25+node+(cluster*1000)],
+        "upstream" => "nc%d.c%d.%s:7222" % [node, cluster, @domain],
+        "enabled" => true
+      }
+    end
+  end
+
+  JSON.pretty_generate(toxi)
+end
+
 def config
   ERB.new(File.read("configs/cluster.erb"), nil, "-").result(binding)
 end
@@ -133,6 +169,11 @@ task :supercluster do
     f.print compose.to_yaml
   end
   puts "...wrote docker-compose.yaml"
+
+  File.open("configs/toxiproxy.json", "w") do |f|
+    f.print toxiconfig
+  end
+  puts "...wrote configs/toxiproxy.json"
 
   File.open("configs/cluster.conf", "w") do |f|
     f.print config
