@@ -22,7 +22,7 @@ gateway {
       name: "c<%= cluster %>"
       urls: [
         <%- (1..@cluster_members).each do |node| -%>
-          <%- if @toxicluster -%>
+          <%- if @toxigw -%>
             "nats://toxiproxy.<%= @domain %>:<%= 25+node+(cluster*1000) %>"
           <%- else -%>
             "nats://nc<%= node %>.c<%= cluster %>.<%= @domain %>:7222"

@@ -11,14 +11,14 @@ require "json"
 # IMAGE_CONFIG - the path in the image to use for the configuration (/nats-server.conf)
 # PASSWORD - set this to enable multiple accounts using this password
 # NATS - opens a shell after creating the configurations for a specific cluster and host. Set to '1 1' for cluster 1 node 1
-# TOXICLUSTER - if set to 1 configures toxiproxy between clusters
+# TOXIGATEWAY - if set to 1 configures toxiproxy between clusters
 
 def parse_env!
   @domain = ENV.fetch("DOMAIN", "example.net")
   @image = ENV.fetch("IMAGE", "nats")
   @image_config = ENV.fetch("IMAGE_CONFIG", "/nats-server.conf")
   @password = ENV["PASSWORD"]
-  @toxicluster = ENV["TOXICLUSTER"] == "1"
+  @toxigw = ENV["TOXIGATEWAY"] == "1"
 
   begin
     @clusters = Integer(ENV.fetch("CLUSTERS", 2))
@@ -104,7 +104,7 @@ def compose
       }
     end
 
-    if @toxicluster
+    if @toxigw
       services["toxiproxy.%s" % @domain] = {
         "container_name" => "toxiproxy",
         "image" => "shopify/toxiproxy",

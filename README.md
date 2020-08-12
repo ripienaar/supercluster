@@ -89,11 +89,11 @@ Possible settings are:
 |`IMAGE_CONFIG`   |the path in the image to use for the configuration|/nats-server.conf|
 |`PASSWORD`       |set this to enable multiple accounts using this password||
 |`NATS`           |opens a shell after creating the configurations for a specific cluster and host. Set to '1 1' for cluster 1 node 1||
-|`TOXICLUSTER`    |sets up toxiproxy infront of all cluster ports||
+|`TOXIGATEWAY`    |sets up toxiproxy infront of all cluster ports||
 
 ## Toxiproxy
 
-When `TOXICLUSTER=1` a [Toxiproxy](https://github.com/Shopify/toxiproxy) instance is started and all gateway connections
+When `TOXIGATEWAY=1` a [Toxiproxy](https://github.com/Shopify/toxiproxy) instance is started and all gateway connections
 are set to traverse toxiproxy.
 
 Using this one can inject latency and jitter into the connectivity between clusters. The toxiproxy cli is available in the
