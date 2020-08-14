@@ -89,15 +89,13 @@ Possible settings are:
 |`IMAGE_CONFIG`   |the path in the image to use for the configuration|/nats-server.conf|
 |`PASSWORD`       |set this to enable multiple accounts using this password||
 |`NATS`           |opens a shell after creating the configurations for a specific cluster and host. Set to '1 1' for cluster 1 node 1||
-|`TOXIGATEWAY`    |sets up toxiproxy infront of all cluster ports||
 
-## Toxiproxy
+## Traffic Control
 
-When `TOXIGATEWAY=1` a [Toxiproxy](https://github.com/Shopify/toxiproxy) instance is started and all gateway connections
-are set to traverse toxiproxy.
+The https://github.com/lukaszlach/docker-tc system is setup to facilitate `tc` based traffic control allowing for custom
+packet loss, delays, duplication etc to be configured.
 
-Using this one can inject latency and jitter into the connectivity between clusters. The toxiproxy cli is available in the
-running toxiproxy container
+NOTE: `tc` only works on egress traffic.
 
 ## TODO
 
