@@ -22,11 +22,7 @@ gateway {
       name: "c<%= cluster %>"
       urls: [
         <%- (1..@cluster_members).each do |node| -%>
-          <%- if @toxigw -%>
-            "nats://toxiproxy.<%= @domain %>:<%= 25+node+(cluster*1000) %>"
-          <%- else -%>
-            "nats://nc<%= node %>.c<%= cluster %>.<%= @domain %>:7222"
-          <%- end -%>
+          "nats://nc<%= node %>.c<%= cluster %>.<%= @domain %>:7222"
         <%- end -%>
       ]
     }
@@ -40,17 +36,27 @@ accounts {
     users = [
       {user: one, password: <%= @password %>}
     ]
+    exports = [
+      { stream: exports.stream }
+    ]
   }
 
   two: {
     users = [
       {user: two, password: <%= @password %>}
     ]
+    exports = [
+      { stream: exports.stream }
+    ]
   }
 
   system: {
     users = [
       {user: system, password: <%= @password %>}
+    ]
+    imports = [
+      { stream: { account: one, subject: exports.stream }, prefix: imports.one }
+      { stream: { account: two, subject: exports.stream }, prefix: imports.two }
     ]
   }
 }

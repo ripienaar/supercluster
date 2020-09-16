@@ -89,11 +89,14 @@ Possible settings are:
 |`IMAGE_CONFIG`   |the path in the image to use for the configuration|/nats-server.conf|
 |`PASSWORD`       |set this to enable multiple accounts using this password||
 |`NATS`           |opens a shell after creating the configurations for a specific cluster and host. Set to '1 1' for cluster 1 node 1||
+|`TC`             |sets up Linux traffic control within the cluster|
 
 ## Traffic Control
 
 The https://github.com/lukaszlach/docker-tc system is setup to facilitate `tc` based traffic control allowing for custom
 packet loss, delays, duplication etc to be configured.
+
+To use this set the `TC` variable to `1`
 
 NOTE: `tc` only works on egress traffic.
 
@@ -101,5 +104,4 @@ NOTE: `tc` only works on egress traffic.
 
  * Set up NATS Surveyor
  * TLS
- * Operators
  * JetStream

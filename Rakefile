@@ -11,12 +11,14 @@ require "json"
 # IMAGE_CONFIG - the path in the image to use for the configuration (/nats-server.conf)
 # PASSWORD - set this to enable multiple accounts using this password
 # NATS - opens a shell after creating the configurations for a specific cluster and host. Set to '1 1' for cluster 1 node 1
+# TC - enables Linux traffic control shaping, only on Linux servers
 
 def parse_env!
   @domain = ENV.fetch("DOMAIN", "example.net")
   @image = ENV.fetch("IMAGE", "nats")
   @image_config = ENV.fetch("IMAGE_CONFIG", "/nats-server.conf")
   @password = ENV["PASSWORD"]
+  @tc = ["yes", "true", "1"].include?(ENV["TC"])
 
   begin
     @clusters = Integer(ENV.fetch("CLUSTERS", 2))
@@ -107,20 +109,22 @@ def compose
     puts
   end
 
-  services["tc.%s" % @domain] = {
-    "container_name" => "traffic-control",
-    "image" => "lukaszlach/docker-tc",
-    "dns_search" => @domain,
-    "network_mode" => "host",
-    "cap_add" => ["NET_ADMIN"],
-    "volumes" => [
-      "/var/run/docker.sock:/var/run/docker.sock",
-    ],
-    "environment" => {
-      "HTTP_BIND" => "0.0.0.0",
-      "HTTP_PORT" => "4080"
+  if @tc
+    services["tc.%s" % @domain] = {
+      "container_name" => "traffic-control",
+      "image" => "lukaszlach/docker-tc",
+      "dns_search" => @domain,
+      "network_mode" => "host",
+      "cap_add" => ["NET_ADMIN"],
+      "volumes" => [
+        "/var/run/docker.sock:/var/run/docker.sock",
+      ],
+      "environment" => {
+        "HTTP_BIND" => "0.0.0.0",
+        "HTTP_PORT" => "4080"
+      }
     }
-  }
+  end
 
   composev3
 end
@@ -144,6 +148,13 @@ def config
   ERB.new(File.read("configs/cluster.erb"), nil, "-").result(binding)
 end
 
+desc "Starts a shell"
+task :shell do
+  parse_env!
+
+  start_shell
+end
+
 desc "Creates a docker-compose based super cluster"
 task :supercluster do
   parse_env!
@@ -158,5 +169,6 @@ task :supercluster do
   end
   puts "...wrote configs/cluster.conf"
 
-  start_shell
+  puts
+  puts "Use rake shell to access the network"
 end
