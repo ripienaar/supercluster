@@ -92,6 +92,7 @@ def compose
         "environment" => {
           "GATEWAY" => "c%d" % cluster,
           "NAME" => container_name,
+          "ADVERTISE" => "localhost:%d" % port
         },
         "networks" => [
           network,
