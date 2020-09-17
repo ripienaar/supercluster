@@ -40,13 +40,18 @@ Cluster: 2
 ...wrote docker-compose.yaml
 ...wrote configs/cluster.conf
 
-Starting a shell in cluster 1 connected to node 1 for the 'nats' cli with NATS_URL, NATS_USER and NATS_PASSWORD set
-
-[rip@dev1]%
+Use rake shell to access the network
 ```
 
 Now start the cluster in another window using `docker-compose up` and you can see the cluster members:
 
+You can connect to the cluster as follows:
+
+```nohighlight
+$ SHELL="2 1" rake shell
+```
+
+This opens a new shell configured to connect to cluster 2 node 1.
 
 ```nohighlight
 [rip@dev1]% nats server list --user system
