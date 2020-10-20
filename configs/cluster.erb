@@ -37,6 +37,9 @@ accounts {
     users = [
       {user: one, password: <%= @password %>}
     ]
+    imports = [
+      {service: {account: weather, subject: service.weather.requests.>}, to: service.weather.>, share: true}
+    ]
     exports = [
       { stream: exports.stream }
     ]
@@ -46,8 +49,27 @@ accounts {
     users = [
       {user: two, password: <%= @password %>}
     ]
+    imports = [
+      {service: {account: weather, subject: service.weather.requests.>}, to: service.weather.>}
+    ]
     exports = [
       { stream: exports.stream }
+    ]
+  }
+
+  weather: {
+    users = [
+      {user: weather, password: <%= @password %>}
+    ]
+    exports = [
+      {
+        service: service.weather.requests.>
+        accounts: [one, two]
+        latency: {
+          sampling: 100%
+          subject: service.weather.latency
+        }
+      }
     ]
   }
 
