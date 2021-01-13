@@ -14,7 +14,7 @@ The command below will:
 
 
 ```nohighligh
-$ NATS="1 1" PASSWORD=password rake supercluster
+$ PASSWORD=password rake supercluster
 Cluster: 1
   Node: nc1.c1.example.net
     Port: 10000
@@ -86,6 +86,7 @@ Possible settings are:
 
 |Setting        |Description                       |Default    |
 |-----------------|----------------------------------|-----------|
+|`JETSTREAM`      |enables JetStream clustered mode||
 |`DOMAIN`         |the domain to create containers in|example.net|
 |`IMAGE`          |the docker image to use|nats|
 |`CLUSTERS`       |how many clusters to create|2|
@@ -109,4 +110,3 @@ NOTE: `tc` only works on egress traffic.
 
  * Set up NATS Surveyor
  * TLS
- * JetStream

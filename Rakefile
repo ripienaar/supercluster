@@ -12,6 +12,7 @@ require "json"
 # PASSWORD - set this to enable multiple accounts using this password
 # NATS - opens a shell after creating the configurations for a specific cluster and host. Set to '1 1' for cluster 1 node 1
 # TC - enables Linux traffic control shaping, only on Linux servers
+# JETSTREAM - enables JetStream on all servers in the first cluster
 
 def parse_env!
   @domain = ENV.fetch("DOMAIN", "example.net")
@@ -38,6 +39,11 @@ def parse_env!
     abort("Please set PORT to an integer: %s", $!)
   end
 
+  if ENV.include?("JETSTREAM")
+    abort("JetStream is only supported in single cluster deploys") if @clusters > 1
+    @jetstream = true
+  end
+
   if ENV["NATS"]
     @shell_cluster, @shell_node = ENV["NATS"].split(/ /)
 
@@ -53,6 +59,13 @@ def node_port(cluster, node)
   abort("Only %d cluster members are defined" % @cluster_members) if node > @cluster_members
 
   @base_port + ((cluster-1)*@cluster_members) + node-1
+end
+
+def leafnode_port(cluster, node)
+  abort("Only %d clusters are defined" % @clusters) if cluster > @clusters
+  abort("Only %d cluster members are defined" % @cluster_members) if node > @cluster_members
+
+  @base_port + ((cluster-1)*@cluster_members) + node-1 + 100
 end
 
 def compose
@@ -76,10 +89,12 @@ def compose
     (1..@cluster_members).each do |node|
       name = "nc%d.%s" % [node, cluster_domain]
       port = node_port(cluster, node)
+      lport = leafnode_port(cluster, node)
       container_name = "nc%d-c%s" % [node, cluster]
 
       puts "  Node: %s" % name
-      puts "    Port: %d" % port
+      puts "         Port: %d" % port
+      puts "    Leaf Port: %d" % lport
       puts
 
       services[name] = {
@@ -102,7 +117,8 @@ def compose
           "./configs/cluster.conf:%s" % @image_config
         ],
         "ports" => [
-          "%d:4222" % port
+          "%d:4222" % port,
+          "%d:7422" % lport
         ]
       }
     end
@@ -131,7 +147,7 @@ def compose
 end
 
 def start_shell
-  return unless @shell_node && @shell_cluster
+  abort "Shell not started, node and cluster could not be determined" unless @shell_node && @shell_cluster
 
   ENV["NATS_URL"] = "localhost:%d" % node_port(@shell_cluster, @shell_node)
   if @password

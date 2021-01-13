@@ -1,0 +1,13 @@
+{
+  "subjects": [
+    "js.in.ct"
+  ],
+  "retention": "limits",
+  "max_consumers": -1,
+  "max_msgs": -1,
+  "max_bytes": -1,
+  "max_age": 0,
+  "storage": "file",
+  "discard": "old",
+  "num_replicas": 3
+}

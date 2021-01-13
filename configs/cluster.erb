@@ -13,6 +13,10 @@ cluster {
   ]
 }
 
+leafnodes {
+  port: 7422
+}
+
 gateway {
   name: $GATEWAY
   port: 7222
@@ -31,9 +35,18 @@ gateway {
   ]
 }
 
+<%- if @jetstream -%>
+jetstream {
+  store_dir: /jetstream
+}
+<%- end -%>
+
 <%- if @password -%>
 accounts {
   one: {
+<%- if @jetstream -%>
+    jetstream: enabled
+<%- end -%>
     users = [
       {user: one, password: <%= @password %>}
     ]
@@ -46,6 +59,9 @@ accounts {
   }
 
   two: {
+<%- if @jetstream -%>
+    jetstream: enabled
+<%- end -%>
     users = [
       {user: two, password: <%= @password %>}
     ]
@@ -58,6 +74,9 @@ accounts {
   }
 
   weather: {
+<%- if @jetstream -%>
+    jetstream: enabled
+<%- end -%>
     users = [
       {user: weather, password: <%= @password %>}
     ]
