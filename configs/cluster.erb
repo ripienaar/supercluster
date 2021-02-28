@@ -3,12 +3,14 @@ monitor_port: 8222
 server_name: $NAME
 client_advertise: $ADVERTISE
 
+server_tags: $GATEWAY
+
 cluster {
   port: 6222
 
   routes = [
     <%- (1..@cluster_members).each do |node| -%>
-    nats-route://nc<%= node %>:6222
+    nats-route://n<%= node %>:6222
     <%- end -%>
   ]
 }
@@ -27,7 +29,7 @@ gateway {
       name: "c<%= cluster %>"
       urls: [
         <%- (1..@cluster_members).each do |node| -%>
-          "nats://nc<%= node %>.c<%= cluster %>.<%= @domain %>:7222"
+          "nats://n<%= node %>.c<%= cluster %>.<%= @domain %>:7222"
         <%- end -%>
       ]
     }
@@ -37,7 +39,7 @@ gateway {
 
 <%- if @jetstream -%>
 jetstream {
-  store_dir: /jetstream
+  store_dir: /data
 }
 <%- end -%>
 
@@ -55,6 +57,8 @@ accounts {
     ]
     exports = [
       { stream: exports.stream }
+      { service: "$JS.API.>" }
+      { stream: "$JS.EVENT.>" }
     ]
   }
 
@@ -67,6 +71,8 @@ accounts {
     ]
     imports = [
       {service: {account: weather, subject: service.weather.requests.>}, to: service.weather.>}
+      {service: {account: one, subject: "$JS.API.>"}, to: accounts.one.js.api.>}
+      {stream: {account: one, subject: "$JS.EVENT.>"}, to: accounts.one.js.event.>}
     ]
     exports = [
       { stream: exports.stream }
@@ -95,10 +101,6 @@ accounts {
   system: {
     users = [
       {user: system, password: <%= @password %>}
-    ]
-    imports = [
-      { stream: { account: one, subject: exports.stream }, prefix: imports.one }
-      { stream: { account: two, subject: exports.stream }, prefix: imports.two }
     ]
   }
 }

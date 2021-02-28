@@ -13,6 +13,7 @@ require "json"
 # NATS - opens a shell after creating the configurations for a specific cluster and host. Set to '1 1' for cluster 1 node 1
 # TC - enables Linux traffic control shaping, only on Linux servers
 # JETSTREAM - enables JetStream on all servers in the first cluster
+# MOUNT - adds a mount in source:dest to the containers
 
 def parse_env!
   @domain = ENV.fetch("DOMAIN", "example.net")
@@ -39,10 +40,8 @@ def parse_env!
     abort("Please set PORT to an integer: %s", $!)
   end
 
-  if ENV.include?("JETSTREAM")
-    abort("JetStream is only supported in single cluster deploys") if @clusters > 1
-    @jetstream = true
-  end
+  @jetstream = ENV.include?("JETSTREAM")
+  @mount = ENV["MOUNT"]
 
   if ENV["NATS"]
     @shell_cluster, @shell_node = ENV["NATS"].split(/ /)
@@ -87,10 +86,10 @@ def compose
     puts "Cluster: %d" % cluster
 
     (1..@cluster_members).each do |node|
-      name = "nc%d.%s" % [node, cluster_domain]
+      name = "n%d.%s" % [node, cluster_domain]
       port = node_port(cluster, node)
       lport = leafnode_port(cluster, node)
-      container_name = "nc%d-c%s" % [node, cluster]
+      container_name = "n%d-c%s" % [node, cluster]
 
       puts "  Node: %s" % name
       puts "         Port: %d" % port
@@ -114,13 +113,17 @@ def compose
           "shared"
         ],
         "volumes" => [
-          "./configs/cluster.conf:%s" % @image_config
+          "./configs/cluster.conf:%s" % @image_config,
+          "./data/%s:/data" % container_name
+
         ],
         "ports" => [
           "%d:4222" % port,
           "%d:7422" % lport
         ]
       }
+
+      services[name]["volumes"] << @mount if @mount
     end
 
     puts
